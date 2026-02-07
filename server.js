@@ -22,12 +22,9 @@ const model = new ChatOpenAI({
 
 /**
  * Build the prompt for the LLM based on the agent name and the incoming command.
- * You can customise the system message here to change the behaviour of the agent.
  */
 function buildPrompt(command) {
-  const systemMsg = new SystemMessage(
-    `You are ${agentName}, an AI assistant.`
-  );
+  const systemMsg = new SystemMessage(`You are ${agentName}, an AI assistant.`);
   const userMsg = new HumanMessage(command);
   return [systemMsg, userMsg];
 }
@@ -95,6 +92,11 @@ app.post('/command', async (req, res) => {
     });
   }
 });
+
+app.listen(port, () => {
+  console.log(`Creative Grace server listening on port ${port}`);
+});
+
 
 app.listen(port, () => {
   console.log(`Creative Grace server listening on port ${port}`);
