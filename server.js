@@ -14,8 +14,8 @@ app.get("/", (req, res) => {
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
-    agent: process.env.AGENT_NAME,
-    mode: process.env.AGENT_MODE,
+    agent: process.env.AGENT_NAME || "AELYSIA",
+    mode: process.env.AGENT_MODE || "control",
     uptime: process.uptime()
   });
 });
@@ -24,9 +24,5 @@ app.get("/health", (req, res) => {
 app.get("/status", (req, res) => {
   const token = req.headers["x-control-token"];
 
-  if (token !== process.env.CONTROL_TOKEN) {
-    return res.status(401).json({ error: "unauthorized" });
-  }
-
-  res.json({
-    status: "rea
+  if (!process.env.CONTROL_TOKEN) {
+    return res.status(500).json
