@@ -13,9 +13,13 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" })
 })
 
+app.get("/memory", (req, res) => {
+  res.json({ status: "memory endpoint ready" })
+})
+
 app.post("/memory", (req, res) => {
   console.log("Memory received:", req.body)
-  res.json({ status: "stored" })
+  res.json({ status: "stored", received: req.body })
 })
 
 app.listen(PORT, () => {
