@@ -1,27 +1,24 @@
-const express = require("express")
-const app = express()
+import express from "express";
 
-app.use(express.json())
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-const PORT = process.env.PORT || 8080
-
+// Root heartbeat
 app.get("/", (req, res) => {
-  res.send("ÆLYSIA online")
-})
+  res.send("AELYSIA online");
+});
 
+// Health and control status endpoint
 app.get("/health", (req, res) => {
-  res.json({ status: "ok" })
-})
+  res.json({
+    status: "ok",
+    agent: process.env.AGENT_NAME || "unknown",
+    mode: process.env.AGENT_MODE || "unset",
+    uptime: process.uptime()
+  });
+});
 
-app.get("/memory", (req, res) => {
-  res.json({ status: "memory endpoint ready" })
-})
-
-app.post("/memory", (req, res) => {
-  console.log("Memory received:", req.body)
-  res.json({ status: "stored", received: req.body })
-})
-
+// Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
+  console.log(`Control node running on port ${PORT}`);
+});
