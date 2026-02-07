@@ -1,18 +1,24 @@
 const express = require("express");
-const app = express();
-const port = process.env.PORT || 8080;
 
-// health check
+const app = express();
+const PORT = process.env.PORT || 8080;
+
+// Root route
+app.get("/", (req, res) => {
+  res.send("Creative Grace server is running.");
+});
+
+// Health check
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
 
-// ping endpoint ← ADD THIS HERE
+// Ping test
 app.get("/ping", (req, res) => {
-  res.json({ status: "alive", service: "creative-grace" });
+  res.json({ status: "alive" });
 });
 
-// start server ← THIS STAYS LAST
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
