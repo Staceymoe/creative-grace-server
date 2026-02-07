@@ -1,22 +1,20 @@
-const express = require("express");
+const express = require("express")
+const app = express()
 
-const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8080
 
-// Root route
 app.get("/", (req, res) => {
-  res.send("Creative Grace server is running.");
-});
+  res.send("ÆLYSIA online")
+})
 
-// Health check
 app.get("/health", (req, res) => {
-  res.status(200).send("OK");
-});
+  res.json({ status: "ok" })
+})
 
-// Ping test
-app.get("/ping", (req, res) => {
-  res.json({ status: "alive" });
-});
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`)
+})
+
 
 // Start server
 app.listen(PORT, () => {
