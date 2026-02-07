@@ -1,8 +1,9 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
-const { ChatOpenAI } = require('langchain/chat_models/openai');
-const { SystemMessage, HumanMessage } = require('langchain/schema');
+import express from 'express';
+import cors from 'cors';
+import 'dotenv/config';
+
+import { ChatOpenAI } from "@langchain/openai";
+import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -16,7 +17,7 @@ const agentMode = process.env.AGENT_MODE || 'control';
 
 // Initialise the LLM
 const model = new ChatOpenAI({
-  openAIApiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
   temperature: 0.9,
 });
 
@@ -34,13 +35,14 @@ function buildPrompt(command) {
  */
 async function runModel(command) {
   const prompt = buildPrompt(command);
-  const response = await model.call(prompt);
-  return response.content || response.text;
+  const response = await model.invoke(prompt);
+
+  return response?.content || response?.text || '';
 }
 
 /**
  * Health check endpoint.
- * Returns status, agent name, mode and process uptime in seconds.
+ * Returns status, agent name, mode and uptime.
  */
 app.get('/health', (req, res) => {
   res.json({
@@ -53,38 +55,28 @@ app.get('/health', (req, res) => {
 
 /**
  * Command endpoint.
- * Accepts JSON with a `command` property.
- * The `command` can be a single string or an array of strings.
- * The endpoint runs all commands concurrently and returns their outputs.
  */
 app.post('/command', async (req, res) => {
   try {
     const { command } = req.body;
 
-    // Ensure we always have an array of commands
     let commands = [];
-    if (Array.isArray(command)) {
-      commands = command;
-    } else if (typeof command === 'string') {
-      commands = [command];
-    } else {
+    if (Array.isArray(command)) commands = command;
+    else if (typeof command === 'string') commands = [command];
+    else
       return res.status(400).json({ error: 'Invalid command format' });
-    }
 
-    // Run all commands concurrently
     const results = await Promise.all(commands.map(cmd => runModel(cmd)));
-
-    // If only one result, return a single string; otherwise return an array
-    const output = results.length === 1 ? results[0] : results;
 
     res.json({
       status: 'ok',
       agent: agentName,
       mode: agentMode,
       uptime: Math.floor(process.uptime()),
-      command: command,
-      output,
+      command,
+      output: results.length === 1 ? results[0] : results,
     });
+
   } catch (error) {
     res.status(500).json({
       error: 'Internal Server Error',
@@ -93,11 +85,7 @@ app.post('/command', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Creative Grace server listening on port ${port}`);
-});
-
-
+// Start server
 app.listen(port, () => {
   console.log(`Creative Grace server listening on port ${port}`);
 });
