@@ -3,17 +3,19 @@ const express = require("express");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(express.json());
+
 // Root heartbeat
 app.get("/", (req, res) => {
   res.send("AELYSIA online");
 });
 
-// Health endpoint (public)
+// Health endpoint
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
-    agent: process.env.AGENT_NAME || "unknown",
-    mode: process.env.AGENT_MODE || "unset",
+    agent: process.env.AGENT_NAME,
+    mode: process.env.AGENT_MODE,
     uptime: process.uptime()
   });
 });
@@ -31,6 +33,29 @@ app.get("/status", (req, res) => {
     agent: process.env.AGENT_NAME,
     mode: process.env.AGENT_MODE,
     time: new Date().toISOString()
+  });
+});
+
+// Command intake endpoint
+app.post("/command", (req, res) => {
+  const token = req.headers["x-control-token"];
+
+  if (token !== process.env.CONTROL_TOKEN) {
+    return res.status(401).json({ error: "unauthorized" });
+  }
+
+  const { command } = req.body;
+
+  if (!command) {
+    return res.status(400).json({ error: "no command provided" });
+  }
+
+  console.log("Received command:", command);
+
+  res.json({
+    accepted: true,
+    command,
+    receivedAt: new Date().toISOString()
   });
 });
 
