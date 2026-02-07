@@ -1,58 +1,49 @@
-const express = require("express");
+const express = require('express');
+require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;
 
+// Ensure JSON request bodies are parsed
 app.use(express.json());
 
-// Root heartbeat
-app.get("/", (req, res) => {
-  res.send("AELYSIA online");
+// Basic heartbeat
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'success', message: 'Heartbeat' });
 });
 
-// Health endpoint
-app.get("/health", (req, res) => {
-  res.json({
-    status: "ok",
-    agent: process.env.AGENT_NAME || "unknown",
-    mode: process.env.AGENT_MODE || "unset",
-    uptime: process.uptime()
-  });
+// Health‑check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'success', message: 'OK' });
 });
 
-// Command intake endpoint (POST only)
-app.post("/command", (req, res) => {
-  const token = req.headers["x-control-token"];
+// Protected command endpoint
+app.post('/command', (req, res) => {
+  const { token, message } = req.body;
 
-  if (token !== process.env.CONTROL_TOKEN) {
-    return res.status(401).json({ error: "unauthorized" });
+  // 401 if no token or invalid token
+  if (!token || token !== process.env.AELYSIA_TOKEN) {
+    return res.status(401).json({ status: 'error', message: 'Unauthorized' });
   }
 
-  const { command } = req.body || {};
-
-  if (!command) {
-    return res.status(400).json({ error: "no command provided" });
+  // 400 if no message
+  if (!message || !message.trim()) {
+    return res.status(400).json({ status: 'error', message: 'Invalid message' });
   }
 
-  if (command === "ping") {
-    return res.json({
-      status: "ack",
-      agent: process.env.AGENT_NAME,
-      mode: process.env.AGENT_MODE,
-      received: "ping",
-      time: new Date().toISOString()
-    });
-  }
+  try {
+    // Simulate AI processing
+    const aelysiaResponse = { reply: `Echo: ${message}` };
 
-  res.json({
-    status: "received",
-    command,
-    time: new Date().toISOString()
-  });
+    res.status(200).json({ status: 'success', data: aelysiaResponse });
+  } catch (error) {
+    console.error('Error processing message:', error);
+    res.status(500).json({ status: 'error', message: 'Something went wrong' });
+  }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Control node running on port ${PORT}`);
+// Start the server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
 
