@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
+import fs from 'fs';
+import path from 'path';
 
 import { ChatOpenAI } from "@langchain/openai";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
@@ -11,7 +13,7 @@ const port = process.env.PORT || 8080;
 app.use(express.json());
 app.use(cors());
 
-// Load agent configuration from environment variables
+// Load agent configuration
 const agentName = process.env.AGENT_NAME || 'AELYSIA';
 const agentMode = process.env.AGENT_MODE || 'control';
 
@@ -28,6 +30,43 @@ function buildPrompt(command) {
   const systemMsg = new SystemMessage(`You are ${agentName}, an AI assistant.`);
   const userMsg = new HumanMessage(command);
   return [systemMsg, userMsg];
+}
+
+/**
+ * Local command router for system-level functionality
+ */
+async function handleLocalCommands(cmd) {
+  // READ FILE
+  if (cmd.startsWith("read file")) {
+    const filePath = cmd.replace("read file", "").trim();
+    try {
+      const absolutePath = path.resolve(filePath);
+      const content = fs.readFileSync(absolutePath, 'utf8');
+      return `FILE CONTENTS:\n${content}`;
+    } catch (err) {
+      return `ERROR: Unable to read file: ${err.message}`;
+    }
+  }
+
+  // WRITE FILE
+  if (cmd.startsWith("write file")) {
+    try {
+      const parts = cmd.split(" ");
+      const filePath = parts[2];
+      const content = parts.slice(3).join(" ");
+
+      if (!filePath) return "ERROR: No filepath provided.";
+
+      const absolutePath = path.resolve(filePath);
+      fs.writeFileSync(absolutePath, content, 'utf8');
+      return `SUCCESS: File written to ${absolutePath}`;
+    } catch (err) {
+      return `ERROR: Unable to write file: ${err.message}`;
+    }
+  }
+
+  // If nothing matched, return null
+  return null;
 }
 
 /**
@@ -68,7 +107,14 @@ app.post('/command', async (req, res) => {
     else if (typeof command === 'string') commands = [command];
     else return res.status(400).json({ error: 'Invalid command format' });
 
-    const results = await Promise.all(commands.map(cmd => runModel(cmd)));
+    const results = await Promise.all(commands.map(async (cmd) => {
+      // FIRST: try local system-level actions
+      const localResult = await handleLocalCommands(cmd);
+      if (localResult !== null) return localResult;
+
+      // FALLBACK: send to LLM
+      return await runModel(cmd);
+    }));
 
     res.json({
       status: 'ok',
@@ -92,4 +138,3 @@ app.post('/command', async (req, res) => {
 app.listen(port, () => {
   console.log(`Creative Grace server listening on port ${port}`);
 });
-
